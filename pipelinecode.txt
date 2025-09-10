@@ -61,33 +61,29 @@ pipeline {
 
         stage('Deploy Backend to Tomcat (/springapp1)') {
             steps {
-                script {
-                    sh """
-                        curl -u ${TOMCAT_USER}:${TOMCAT_PASS} \\
-                          --upload-file ${BACKEND_WAR} \\
-                          "${TOMCAT_URL}/deploy?path=/springapp1&update=true"
-                    """
-                }
+                sh """
+                    curl -u ${TOMCAT_USER}:${TOMCAT_PASS} \
+                      --upload-file ${BACKEND_WAR} \
+                      "${TOMCAT_URL}/deploy?path=/springapp1&update=true"
+                """
             }
         }
 
         stage('Deploy Frontend to Tomcat (/frontapp1)') {
             steps {
-                script {
-                    sh """
-                        curl -u ${TOMCAT_USER}:${TOMCAT_PASS} \\
-                          --upload-file ${FRONTEND_WAR} \\
-                          "${TOMCAT_URL}/deploy?path=/frontapp1&update=true"
-                    """
-                }
+                sh """
+                    curl -u ${TOMCAT_USER}:${TOMCAT_PASS} \
+                      --upload-file ${FRONTEND_WAR} \
+                      "${TOMCAT_URL}/deploy?path=/frontapp1&update=true"
+                """
             }
         }
     }
 
     post {
         success {
-            echo "✅ Backend deployed: http://16.16.206.169 :9090/springapp1"
-            echo "✅ Frontend deployed: http://16.16.206.169 :9090/frontapp1"
+            echo "✅ Backend deployed: http://16.16.206.169:9090/springapp1"
+            echo "✅ Frontend deployed: http://16.16.206.169:9090/frontapp1"
         }
         failure {
             echo "❌ Build or deployment failed"
