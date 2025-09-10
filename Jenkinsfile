@@ -11,79 +11,82 @@ pipeline {
         FRONTEND_DIR = 'crud_frontend/crud_frontend-main'
 
         TOMCAT_URL = 'http://16.16.206.169:9090/manager/text'
-        TOMCAT_USER = 'admin'
-        TOMCAT_PASS = 'admin'
-
-        BACKEND_WAR = 'springapp1.war'
-        FRONTEND_WAR = 'frontapp1.war'
+        TOMCAT_CREDS = 'tomcat-creds'   // Jenkins credentials ID
     }
 
     stages {
-        stage('Clone Repository') {
+        stage('Checkout') {
             steps {
                 git url: 'https://github.com/geethakandepi/fullstack.git', branch: 'main'
             }
         }
 
-        stage('Build Frontend (Vite)') {
+        stage('Build Frontend') {
             steps {
                 dir("${env.FRONTEND_DIR}") {
-                    script {
-                        def nodeHome = tool name: 'NODE_HOME', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
-                        env.PATH = "${nodeHome}/bin:${env.PATH}"
-                    }
-                    sh 'npm install'
-                    sh 'npm run build'
+                    sh '''
+                        echo "=== Install frontend deps ==="
+                        npm ci
+                        echo "=== Build frontend ==="
+                        npm run build
+                        echo "=== Verify dist ==="
+                        ls -la dist || { echo "No dist folder found"; exit 1; }
+                    '''
                 }
             }
         }
 
-        stage('Package Frontend as WAR') {
-            steps {
-                dir("${env.FRONTEND_DIR}") {
-                    sh """
-                        mkdir -p frontapp1_war/WEB-INF
-                        cp -r dist/* frontapp1_war/
-                        jar -cvf ../../${FRONTEND_WAR} -C frontapp1_war .
-                    """
-                }
-            }
-        }
-
-        stage('Build Backend (Spring Boot WAR)') {
+        stage('Integrate Frontend into Backend') {
             steps {
                 dir("${env.BACKEND_DIR}") {
-                    sh 'mvn clean package'
-                    sh "cp target/*.war ../../${BACKEND_WAR}"
+                    sh '''
+                        echo "=== Clean old static ==="
+                        rm -rf src/main/resources/static/* || true
+                        echo "=== Copy frontend build into backend static ==="
+                        cp -r ../../${FRONTEND_DIR}/dist/. src/main/resources/static/
+                        ls -la src/main/resources/static || true
+                    '''
                 }
             }
         }
 
-        stage('Deploy Backend to Tomcat (/springapp1)') {
+        stage('Build Backend WAR') {
             steps {
-                sh """
-                    curl -u ${TOMCAT_USER}:${TOMCAT_PASS} \
-                      --upload-file ${BACKEND_WAR} \
-                      "${TOMCAT_URL}/deploy?path=/springapp1&update=true"
-                """
+                dir("${env.BACKEND_DIR}") {
+                    sh '''
+                        echo "=== Package backend ==="
+                        mvn -B clean package -DskipTests
+                        echo "=== Verify WAR ==="
+                        ls -la target/*.war
+                    '''
+                }
             }
         }
 
-        stage('Deploy Frontend to Tomcat (/frontapp1)') {
+        stage('Deploy Backend WAR to Tomcat') {
             steps {
-                sh """
-                    curl -u ${TOMCAT_USER}:${TOMCAT_PASS} \
-                      --upload-file ${FRONTEND_WAR} \
-                      "${TOMCAT_URL}/deploy?path=/frontapp1&update=true"
-                """
+                dir("${env.BACKEND_DIR}") {
+                    script {
+                        def warFile = sh(script: "ls -1 target/*.war | head -n1", returnStdout: true).trim()
+                        if (!warFile) {
+                            error "No WAR found in target/"
+                        }
+                        withCredentials([usernamePassword(credentialsId: env.TOMCAT_CREDS, usernameVariable: 'TUSER', passwordVariable: 'TPASS')]) {
+                            sh """
+                                echo "=== Deploying WAR to Tomcat ==="
+                                curl -v -u "$TUSER:$TPASS" --upload-file "$warFile" \
+                                  "${TOMCAT_URL}/deploy?path=/springapp1&update=true"
+                            """
+                        }
+                    }
+                }
             }
         }
     }
 
     post {
         success {
-            echo "✅ Backend deployed: http://16.16.206.169:9090/springapp1"
-            echo "✅ Frontend deployed: http://16.16.206.169:9090/frontapp1"
+            echo "✅ Application deployed: http://16.16.206.169:9090/springapp1"
         }
         failure {
             echo "❌ Build or deployment failed"
