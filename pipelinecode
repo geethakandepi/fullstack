@@ -2,11 +2,16 @@ pipeline {
     agent any
 
     tools {
+<<<<<<< HEAD
         jdk 'JDK_HOME'
+=======
+        jdk 'JDK_HOME'       // must match Jenkins Global Tool Config
+>>>>>>> 9b7a437a806ec394d6134adde89546396bdb8fd8
         maven 'MAVEN_HOME'
     }
 
     environment {
+<<<<<<< HEAD
         TOMCAT_URL = 'http://51.21.158.152:9090/manager/text'
         TOMCAT_USER = 'admin'
         TOMCAT_PASS = 'admin'
@@ -17,6 +22,18 @@ pipeline {
         FRONTEND_DIR = 'crud_front'
 
         BACKEND_WAR = 'crud_back/target/springapp1.war'
+=======
+        TOMCAT_URL   = 'http://13.53.68.253:9090/manager/text'
+        TOMCAT_USER  = 'admin'
+        TOMCAT_PASS  = 'admin'
+
+        MAIN_REPO    = 'https://github.com/geethakandepi/fullstack.git'
+
+        BACKEND_DIR  = 'crud_backend'
+        FRONTEND_DIR = 'crud_frontend'
+
+        BACKEND_WAR  = 'crud_back/target/springapp1.war'
+>>>>>>> 9b7a437a806ec394d6134adde89546396bdb8fd8
         FRONTEND_WAR = 'crud_front/frontapp1.war'
     }
 
@@ -46,7 +63,12 @@ pipeline {
                     def warDir = "${env.FRONTEND_DIR}/war_content"
                     sh "rm -rf ${warDir}"
                     sh "mkdir -p ${warDir}/META-INF ${warDir}/WEB-INF"
+<<<<<<< HEAD
                     sh "cp -r ${env.FRONTEND_DIR}/dist/* ${warDir}/"
+=======
+                    // FIXED: React output is usually "build", not "dist"
+                    sh "cp -r ${env.FRONTEND_DIR}/build/* ${warDir}/"
+>>>>>>> 9b7a437a806ec394d6134adde89546396bdb8fd8
                     sh "jar -cvf ${env.FRONTEND_WAR} -C ${warDir} ."
                 }
             }
@@ -56,7 +78,11 @@ pipeline {
             steps {
                 dir("${env.BACKEND_DIR}") {
                     sh 'mvn clean package'
+<<<<<<< HEAD
                     sh 'mv target/*.war target/springapp1.war'
+=======
+                    sh 'mv target/*.war target/springapp1.war || true'
+>>>>>>> 9b7a437a806ec394d6134adde89546396bdb8fd8
                 }
             }
         }
@@ -73,4 +99,8 @@ pipeline {
             }
         }
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 9b7a437a806ec394d6134adde89546396bdb8fd8
