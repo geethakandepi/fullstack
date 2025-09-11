@@ -46,7 +46,7 @@ pipeline {
                     def warDir = "${env.FRONTEND_DIR}/war_content"
                     sh "rm -rf ${warDir}"
                     sh "mkdir -p ${warDir}/META-INF ${warDir}/WEB-INF"
-                    sh "cp -r ${env.FRONTEND_DIR}/dist/* ${warDir}/"
+                    sh "cp -r ${env.FRONTEND_DIR}/build/* ${warDir}/"
                     sh "jar -cvf ${env.FRONTEND_WAR} -C ${warDir} ."
                 }
             }
