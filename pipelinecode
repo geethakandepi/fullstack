@@ -13,8 +13,8 @@ pipeline {
 
         MAIN_REPO    = 'https://github.com/geethakandepi/fullstack.git'
 
-        BACKEND_DIR  = 'crud_back'
-        FRONTEND_DIR = 'crud_front'
+        BACKEND_DIR  = 'crud_backend'
+        FRONTEND_DIR = 'crud_frontend'
 
         BACKEND_WAR  = 'crud_back/target/springapp1.war'
         FRONTEND_WAR = 'crud_front/frontapp1.war'
