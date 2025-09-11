@@ -35,18 +35,19 @@ pipeline {
                 }
                 dir("${env.FRONTEND_DIR}") {
                     sh 'npm install'
-                    sh 'npm run build'
+                    sh 'npm run build'  // ✅ generates dist/ folder
                 }
             }
         }
 
-        stage('Package React as WAR') {
+        stage('Package React as WAR (Vite)') {
             steps {
                 script {
                     def warDir = "${env.FRONTEND_DIR}/war_content"
                     sh "rm -rf ${warDir}"
                     sh "mkdir -p ${warDir}/META-INF ${warDir}/WEB-INF"
-                    sh "cp -r ${env.FRONTEND_DIR}/build/* ${warDir}/"
+                    // ✅ Use dist instead of build
+                    sh "cp -r ${env.FRONTEND_DIR}/dist/* ${warDir}/"
                     sh "jar -cvf ${env.FRONTEND_WAR} -C ${warDir} ."
                 }
             }
