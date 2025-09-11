@@ -10,8 +10,8 @@ pipeline {
         BACKEND_DIR = 'crud_backend/crud_backend-main'
         FRONTEND_DIR = 'crud_frontend/crud_frontend-main'
 
-        TOMCAT_URL = 'http://16.16.206.169:9090/manager/text'
-        TOMCAT_CREDS = 'tomcat-creds'   // Jenkins credentials ID
+        TOMCAT_URL = 'http://13.49.102.132:9090/manager/text'
+        TOMCAT_CREDS = 'admin'   // Jenkins credentials ID
     }
 
     stages {
@@ -86,7 +86,7 @@ pipeline {
 
     post {
         success {
-            echo "✅ Application deployed: http://16.16.206.169:9090/springapp1"
+            echo "✅ Application deployed: http://13.49.102.132:9090/springapp1"
         }
         failure {
             echo "❌ Build or deployment failed"
