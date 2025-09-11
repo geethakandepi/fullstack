@@ -2,21 +2,21 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JDK_HOME'       // must match Jenkins Global Tool Config
+        jdk 'JDK_HOME'
         maven 'MAVEN_HOME'
     }
 
     environment {
-        TOMCAT_URL   = 'http://13.53.68.253:9090/manager/text'
-        TOMCAT_USER  = 'admin'
-        TOMCAT_PASS  = 'admin'
+        TOMCAT_URL = 'http://13.53.68.253:9090/manager/text'
+        TOMCAT_USER = 'admin'
+        TOMCAT_PASS = 'admin'
 
-        MAIN_REPO    = 'https://github.com/geethakandepi/fullstack.git'
+        MAIN_REPO = 'https://github.com/geethakandepi/fullstack.git'
 
-        BACKEND_DIR  = 'crud_backend'       // <-- adjust if your folder is crud_backend
+        BACKEND_DIR = 'crud_backend'
         FRONTEND_DIR = 'crud_frontend'
 
-        BACKEND_WAR  = 'crud_backend/target/springapp1.war'
+        BACKEND_WAR = 'crud_backend/target/springapp1.war'
         FRONTEND_WAR = 'crud_frontend/frontapp1.war'
     }
 
@@ -46,7 +46,7 @@ pipeline {
                     def warDir = "${env.FRONTEND_DIR}/war_content"
                     sh "rm -rf ${warDir}"
                     sh "mkdir -p ${warDir}/META-INF ${warDir}/WEB-INF"
-                    sh "cp -r ${env.FRONTEND_DIR}/build/* ${warDir}/"
+                    sh "cp -r ${env.FRONTEND_DIR}/dist/* ${warDir}/"
                     sh "jar -cvf ${env.FRONTEND_WAR} -C ${warDir} ."
                 }
             }
@@ -56,7 +56,7 @@ pipeline {
             steps {
                 dir("${env.BACKEND_DIR}") {
                     sh 'mvn clean package'
-                    sh 'mv target/*.war target/springapp1.war || true'
+                    sh 'mv target/*.war target/springapp1.war'
                 }
             }
         }
