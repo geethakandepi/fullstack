@@ -11,7 +11,7 @@ pipeline {
         TOMCAT_USER = 'admin'
         TOMCAT_PASS = 'admin'
 
-        MAIN_REPO = 'https://github.com/satyavathiborra/fullstack-s201.git'
+        MAIN_REPO = 'https://github.com/geethakandepi/fullstack.git'
 
         BACKEND_DIR = 'crud_back'
         FRONTEND_DIR = 'crud_front'
