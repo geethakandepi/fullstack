@@ -1,0 +1,76 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'JDK_HOME'
+        maven 'MAVEN_HOME'
+    }
+
+    environment {
+        TOMCAT_URL = 'http://51.21.158.152:9090/manager/text'
+        TOMCAT_USER = 'admin'
+        TOMCAT_PASS = 'admin'
+
+        MAIN_REPO = 'https://github.com/satyavathiborra/fullstack-s201.git'
+
+        BACKEND_DIR = 'crud_back'
+        FRONTEND_DIR = 'crud_front'
+
+        BACKEND_WAR = 'crud_back/target/springapp1.war'
+        FRONTEND_WAR = 'crud_front/frontapp1.war'
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main', url: "${env.MAIN_REPO}"
+            }
+        }
+
+        stage('Build React Frontend') {
+            steps {
+                script {
+                    def nodeHome = tool name: 'NODE_HOME', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
+                    env.PATH = "${nodeHome}/bin:${env.PATH}"
+                }
+                dir("${env.FRONTEND_DIR}") {
+                    sh 'npm install'
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Package React as WAR') {
+            steps {
+                script {
+                    def warDir = "${env.FRONTEND_DIR}/war_content"
+                    sh "rm -rf ${warDir}"
+                    sh "mkdir -p ${warDir}/META-INF ${warDir}/WEB-INF"
+                    sh "cp -r ${env.FRONTEND_DIR}/dist/* ${warDir}/"
+                    sh "jar -cvf ${env.FRONTEND_WAR} -C ${warDir} ."
+                }
+            }
+        }
+
+        stage('Build Spring Boot App') {
+            steps {
+                dir("${env.BACKEND_DIR}") {
+                    sh 'mvn clean package'
+                    sh 'mv target/*.war target/springapp1.war'
+                }
+            }
+        }
+
+        stage('Deploy Spring Boot WAR') {
+            steps {
+                sh "curl -u ${env.TOMCAT_USER}:${env.TOMCAT_PASS} --upload-file \"${env.BACKEND_WAR}\" \"${env.TOMCAT_URL}/deploy?path=/springapp1&update=true\""
+            }
+        }
+
+        stage('Deploy Frontend WAR') {
+            steps {
+                sh "curl -u ${env.TOMCAT_USER}:${env.TOMCAT_PASS} --upload-file \"${env.FRONTEND_WAR}\" \"${env.TOMCAT_URL}/deploy?path=/frontapp1&update=true\""
+            }
+        }
+    }
+}
