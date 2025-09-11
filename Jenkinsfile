@@ -11,74 +11,74 @@ pipeline {
         FRONTEND_DIR = 'crud_frontend/crud_frontend-main'
 
         TOMCAT_URL = 'http://13.49.102.132:9090/manager/text'
-        TOMCAT_CREDS = 'admin'   // Jenkins credentials ID
+        TOMCAT_USER = 'admin'
+        TOMCAT_PASS = 'admin'
+
+        BACKEND_WAR = 'springapp1.war'
+        FRONTEND_WAR = 'frontapp1.war'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
-                git url: 'https://github.com/geethakandepi/fullstack.git', branch: 'main'
+                git url: 'https://github.com/srithars/fullstackapp.git', branch: 'master'
             }
         }
 
-        stage('Build Frontend') {
+        stage('Build Frontend (Vite)') {
             steps {
                 dir("${env.FRONTEND_DIR}") {
-                    sh '''
-                        echo "=== Install frontend deps ==="
-                        npm ci
-                        echo "=== Build frontend ==="
-                        npm run build
-                        echo "=== Verify dist ==="
-                        ls -la dist || { echo "No dist folder found"; exit 1; }
-                    '''
-                }
-            }
-        }
-
-        stage('Integrate Frontend into Backend') {
-            steps {
-                dir("${env.BACKEND_DIR}") {
-                    sh '''
-                        echo "=== Clean old static ==="
-                        rm -rf src/main/resources/static/* || true
-                        echo "=== Copy frontend build into backend static ==="
-                        cp -r ../../${FRONTEND_DIR}/dist/. src/main/resources/static/
-                        ls -la src/main/resources/static || true
-                    '''
-                }
-            }
-        }
-
-        stage('Build Backend WAR') {
-            steps {
-                dir("${env.BACKEND_DIR}") {
-                    sh '''
-                        echo "=== Package backend ==="
-                        mvn -B clean package -DskipTests
-                        echo "=== Verify WAR ==="
-                        ls -la target/*.war
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy Backend WAR to Tomcat') {
-            steps {
-                dir("${env.BACKEND_DIR}") {
                     script {
-                        def warFile = sh(script: "ls -1 target/*.war | head -n1", returnStdout: true).trim()
-                        if (!warFile) {
-                            error "No WAR found in target/"
-                        }
-                        withCredentials([usernamePassword(credentialsId: env.TOMCAT_CREDS, usernameVariable: 'TUSER', passwordVariable: 'TPASS')]) {
-                            sh """
-                                echo "=== Deploying WAR to Tomcat ==="
-                                curl -v -u "$TUSER:$TPASS" --upload-file "$warFile" \
-                                  "${TOMCAT_URL}/deploy?path=/springapp1&update=true"
-                            """
-                        }
+                        def nodeHome = tool name: 'NODE_HOME', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
+                        env.PATH = "${nodeHome}/bin:${env.PATH}"
                     }
+                    sh 'npm install'
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Package Frontend as WAR') {
+            steps {
+                dir("${env.FRONTEND_DIR}") {
+                    sh """
+                        mkdir -p frontapp1_war/WEB-INF
+                        cp -r dist/* frontapp1_war/
+                        jar -cvf ../../${FRONTEND_WAR} -C frontapp1_war .
+                    """
+                }
+            }
+        }
+
+        stage('Build Backend (Spring Boot WAR)') {
+            steps {
+                dir("${env.BACKEND_DIR}") {
+                    sh 'mvn clean package'
+                    sh "cp target/*.war ../../${BACKEND_WAR}"
+                }
+            }
+        }
+
+        stage('Deploy Backend to Tomcat (/springapp1)') {
+            steps {
+                script {
+                    sh """
+                        curl -u ${TOMCAT_USER}:${TOMCAT_PASS} \\
+                          --upload-file ${BACKEND_WAR} \\
+                          "${TOMCAT_URL}/deploy?path=/springapp1&update=true"
+                    """
+                }
+            }
+        }
+
+        stage('Deploy Frontend to Tomcat (/frontapp1)') {
+            steps {
+                script {
+                    sh """
+                        curl -u ${TOMCAT_USER}:${TOMCAT_PASS} \\
+                          --upload-file ${FRONTEND_WAR} \\
+                          "${TOMCAT_URL}/deploy?path=/frontapp1&update=true"
+                    """
                 }
             }
         }
@@ -86,7 +86,8 @@ pipeline {
 
     post {
         success {
-            echo "✅ Application deployed: http://13.49.102.132:9090/springapp1"
+            echo "✅ Backend deployed: http://13.49.102.132:9090/springapp1"
+            echo "✅ Frontend deployed: http://13.49.102.132:9090/frontapp1"
         }
         failure {
             echo "❌ Build or deployment failed"
